@@ -4,7 +4,33 @@ aircraft.py.
 This module calculates and sends positional data for each aircraft to fgms.py for
 mp data packing every 0.5 seconds.
 """
+
 from coords import moved, heading_to, distance_to
+
+
+# ---------- Constants ----------
+
+update_interval = 0.5  # seconds
+updates_per_min = 60 / update_interval
+updates_per_hr = 3600 / update_interval
+
+# climb/descent rate per update interval
+climb_descent_rate = int(1800 / updates_per_min)
+
+# shallow intercept to be used for small corrections when intercepting the final approach course.
+shallow_intercept_angle = 5  # degrees
+
+# used to turn the aircraft to the next waypoint and to delete the aircraft when within close proximity to the rwy.
+magic_distance = 0.4  # NM
+
+# distance from the rwy at which the aircraft can begin reducing to approach speed.
+free_speed_distance = 5  # NM
+
+# knots per NM that the aircraft will decrease speed by to ensure a difference of 40 knots over the rwy.
+# in other words, the speed will be 40 knots less over the rwy than at free_speed_distance.
+free_speed_increment = 40 / free_speed_distance
+
+# -------------------------------
 
 
 class Aircraft:
@@ -137,8 +163,8 @@ class Aircraft:
     # ---------------------------------------------------------------------------------------------------------
 
     def move_position(self):
-        """Move position based on distance per 500ms and heading."""
-        distance = self.spd / 7200  # There are 7200 half-seconds in an hour, so d = s/7200
+        """Move position based on distance per update interval."""
+        distance = self.spd / updates_per_hr
         self.lat, self.lon = moved(self.lat, self.lon, self.heading, distance)
 
     # ---------------------------------------------------------------------------------------------------------
@@ -151,10 +177,10 @@ class Aircraft:
     # ---------------------------------------------------------------------------------------------------------
 
     def adjust_alt(self):
-        """Adjust the current altitude by 15ft per 500ms = 1800 FPM."""
+        """Adjust the current altitude by climb_descent_rate."""
         if self.alt != self.target_alt:
-            if abs(self.alt - self.target_alt) >= 15:
-                self.alt = self.alt - 15 if self.alt > self.target_alt else self.alt + 15
+            if abs(self.alt - self.target_alt) >= climb_descent_rate:
+                self.alt = self.alt - climb_descent_rate if self.alt > self.target_alt else self.alt + climb_descent_rate
             else:
                 self.alt = self.target_alt
 
@@ -193,9 +219,9 @@ class Aircraft:
         if brg == self.target_rwy_crs:
             self.turn_one_degree(brg)
         elif brg > self.target_rwy_crs:
-            self.turn_one_degree(brg + 5)
+            self.turn_one_degree(brg + shallow_intercept_angle)
         elif brg < self.target_rwy_crs:
-            self.turn_one_degree(brg - 5)
+            self.turn_one_degree(brg - shallow_intercept_angle)
 
     # ---------------------------------------------------------------------------------------------------------
 
@@ -210,16 +236,15 @@ class Aircraft:
             self.target_alt = glidepath_alt
 
         # Get initial approach spd
-        if round(dme) == 6:
+        if round(dme) == free_speed_distance + 1:
             self.initial_appr_spd = self.spd
 
         # Calculate number of knots, based on dme.
         # Then subtract it from the initial approach spd.
-        if dme < 5 and dme > 0.3:
-            self.spd = self.initial_appr_spd - (-dme + 5) * 8
-        # Delete aircraft once within 0.4 NM radius of the TDZ.
-        elif dme <= 0.4:
-            self.spd = 0
+        if dme < free_speed_distance and dme > magic_distance:
+            self.spd = self.initial_appr_spd - (-dme + free_speed_distance) * free_speed_increment
+        # Delete aircraft once within magic_distance from the TDZ.
+        elif dme <= magic_distance:
             self.delete_aircraft()
 
     # ---------------------------------------------------------------------------------------------------------
@@ -231,12 +256,12 @@ class Aircraft:
 
         # Check if target waypoint has a pre-specified crossing altitude
         if self.target_wpt_alt != 0:
-            tod = abs(self.alt - self.target_wpt_alt) / 1000 * 3
+            tod = abs(self.alt - self.target_wpt_alt) / 1000 * 3  # top of descent
             if dme <= tod and self.on_profile:
                 self.target_alt = self.target_wpt_alt
 
         # Turn towards the waypoint
-        if dme > 0.4:
+        if dme > magic_distance:
             if abs(self.heading - current_bearing) >= 1:
                 self.turn_one_degree(current_bearing)
         else:
