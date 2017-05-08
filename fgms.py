@@ -25,6 +25,7 @@ from struct import pack, unpack
 from math import radians, pi, cos, sin, acos
 
 from coords import WGS84_geodetic_to_cartesian_metres
+import constants as c
 
 
 # ---------- Constants ----------
@@ -171,10 +172,9 @@ def position_data(aircraft_model, lon, lat, pos_amsl, hdg, velx, pitch=0, roll=0
 
 
 class FGMShandshaker(threading.Thread): 
-    def __init__(self, socket, srv_address, aircraft):
+    def __init__(self, socket, aircraft):
         threading.Thread.__init__(self)
         self.socket = socket
-        self.server_address = srv_address
         self.aircraft = aircraft
         self.current_chat_msg = ''
         self.handshaker_run = True
@@ -196,7 +196,7 @@ class FGMShandshaker(threading.Thread):
             packet = make_position_message(self.aircraft.callsign, data)
             # print('Sending packet with size %d=0x%x bytes. Optional data is: %s' % (len(packet), len(packet), packet.data[228:])) # DEBUG
             try:
-                self.socket.sendto(packet.allData(), self.server_address)
+                self.socket.sendto(packet.allData(), (c.server_address, c.server_port))
             except OSError as error:
                 print('Could not send FGMS packet to server. System says: %s' % error)
             sleep(FGMS_handshake_interval)

@@ -6,6 +6,7 @@ mp data packing every 0.5 seconds.
 """
 
 from coords import moved, heading_to, distance_to
+import constants as c
 
 
 # ---------- Constants ----------
@@ -34,25 +35,23 @@ free_speed_increment = 40 / free_speed_distance
 
 
 class Aircraft:
-    def __init__(self, ac, navaids, magvar):
+    def __init__(self, ac):
         self.handler = None  # Stores the aircraft's handler object
         # Status variables
-        self.paused = False
-        self.callsign = ac.get("callsign")
-        self.sq = int(ac.get("sq"))
-        self.lat = float(ac.get("lat"))
-        self.lon = float(ac.get("lon"))
-        self.alt = int(ac.get("alt"))
-        self.spd = int(ac.get("spd"))
-        self.ac_type = ac.get("type")
-        self.route = ac.get("route").split()  # list of waypoints
-        self.navaids = navaids
-        self.magvar = round(float(magvar))
+        self.paused = True
+        self.callsign = ac.get('callsign')
+        self.sq = int(ac.get('sq'))
+        self.lat = float(ac.get('lat'))
+        self.lon = float(ac.get('lon'))
+        self.alt = int(ac.get('alt'))
+        self.spd = int(ac.get('spd'))
+        self.ac_type = ac.get('type')
+        self.route = ac.get('route').split()  # list of waypoints
 
         # Target variables
         self.target_alt = self.alt
         self.target_spd = self.spd
-        self.status = "route"  # route, approach, heading
+        self.status = 'route'  # route, approach, heading
         self.on_profile = True
         self.initial_appr_spd = 180  # default value
         self.target_wpt_index = 0  # index of target waypoint in self.route
@@ -89,15 +88,15 @@ class Aircraft:
 
     def set_route(self, route):
         """Set a new route."""
-        self.status = "route"
+        self.status = 'route'
         self.target_wpt_index = 0
         self.route = route.split()
         self.set_target_wpt()
 
     def set_target_heading(self, target_heading):
         """Set the target heading plus magnetic variation."""
-        self.status = "heading"
-        self.target_heading = (target_heading - self.magvar) % 360
+        self.status = 'heading'
+        self.target_heading = (target_heading - c.data['magvar']) % 360
 
     def set_target_alt(self, target_alt):
         """Set the target altitude."""
@@ -106,25 +105,25 @@ class Aircraft:
 
     def set_target_rwy(self, rwy):
         """Set the target runway."""
-        self.status = "approach"
-        self.target_rwy_lat = float(rwy.get("lat"))
-        self.target_rwy_lon = float(rwy.get("lon"))
-        self.target_rwy_crs = int(rwy.get("crs")) - self.magvar
-        self.target_rwy_elev = int(rwy.get("elev"))
+        self.status = 'approach'
+        self.target_rwy_lat = float(rwy.get('lat'))
+        self.target_rwy_lon = float(rwy.get('lon'))
+        self.target_rwy_crs = int(rwy.get('crs')) - c.data['magvar']
+        self.target_rwy_elev = int(rwy.get('elev'))
 
     def set_target_wpt(self):
         """Obtain coordinates of target waypoint."""
         try:
-            for wp in self.navaids:
-                if wp.get("name") == self.route[self.target_wpt_index]:
-                    self.target_wpt_lat = float(wp.get("lat"))
-                    self.target_wpt_lon = float(wp.get("lon"))
-                    self.target_wpt_alt = int(wp.get("alt", 0))
+            for wp in c.data['navaids']:
+                if wp.get('name') == self.route[self.target_wpt_index]:
+                    self.target_wpt_lat = float(wp.get('lat'))
+                    self.target_wpt_lon = float(wp.get('lon'))
+                    self.target_wpt_alt = int(wp.get('alt', 0))
                     break
         except:
-            self.set_target_heading(self.heading + self.magvar)
+            self.set_target_heading(self.heading + c.data['magvar'])
 
-    def delete_aircraft(self):
+    def disconnect_aircraft(self):
         """Disconnect the aircraft."""
         self.handler.stop()
 
@@ -137,11 +136,11 @@ class Aircraft:
     def control_aircraft(self):
         """Check status and call the appropriate method."""
         if not self.paused:
-            if self.status == "route":
+            if self.status == 'route':
                 self.fly_route()
-            elif self.status == "heading":
+            elif self.status == 'heading':
                 self.adjust_heading()
-            elif self.status == "approach":
+            elif self.status == 'approach':
                 self.check_ils_feather()
             self.adjust_alt()
             self.adjust_speed()

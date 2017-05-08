@@ -28,9 +28,8 @@ FGMS_handshake_interval = 0.5  # seconds
 class FgmsHandler:
     """Creates sockets and starts the fgms connection for each aircraft."""
 
-    def __init__(self, address, port, aircraft):
+    def __init__(self, aircraft):
         """__init__ function."""
-        self.server_address = address, port
         self.aircraft = aircraft
         self.start()
 
@@ -43,7 +42,7 @@ class FgmsHandler:
             self.socket = None
             print('Connection error: %s' % error)
         else:
-            self.FGMS_handshaker = FGMShandshaker(self.socket, self.server_address, self.aircraft)
+            self.FGMS_handshaker = FGMShandshaker(self.socket, self.aircraft)
             self.fgms_handshake()
 
     def stop(self):
