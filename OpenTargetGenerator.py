@@ -34,8 +34,6 @@ Long term TODO:
     * Use floats instead of ints for headings and related calculations for
       more accuracy.
     * Allow for custon climb/descent rates for each aircraft.
-    * Add a pre-specified amount of knots to the speed to account for
-      differences between indicated airspeed and groundspeed.
     * Allow for ground-based scenarios, where aircraft can be instructed
       to taxi, takeoff and land from and to pre-specified locations.
 """
@@ -143,7 +141,7 @@ class OpenTargetGenerator:
                 selected_aircraft.set_target_alt(int(value) * 100)
             # Speed
             elif instruction == 's':
-                selected_aircraft.target_spd = int(value)
+                selected_aircraft.target_spd = int(value) + c.iasvar
             # Approach
             elif instruction == 'a' or instruction == 'i':
                 for rwy in c.data['runways']:

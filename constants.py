@@ -1,4 +1,5 @@
 import os
+from random import randint
 
 
 version = '1.1'
@@ -15,3 +16,4 @@ data = {'magvar': None,
         'navaids': None, 
         'runways': None, 
         'aircraft': None}
+iasvar = randint(5,20)

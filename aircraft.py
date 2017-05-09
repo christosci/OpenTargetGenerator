@@ -50,7 +50,7 @@ class Aircraft:
 
         # Target variables
         self.target_alt = self.alt
-        self.target_spd = self.spd
+        self.target_spd = self.spd + c.iasvar
         self.status = 'route'  # route, approach, heading
         self.on_profile = True
         self.initial_appr_spd = 180  # default value
