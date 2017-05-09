@@ -54,9 +54,10 @@ The following instructions do not require a value:
     
 When no aircraft is selected, you also have the option to use the following special commands:
 
-    exit = deletes all aircraft and exits the program
-    p    = pauses all aircraft
-    u    = unpauses all aircraft
+    exit   = deletes all aircraft and exits the program
+    p      = pauses all aircraft
+    u      = unpauses all aircraft
+    reload = reload the scenario file (useful for editing scenario files)
     
 ## Special Notes
 * The turn rate is 2 degrees per second, which is quite close to the turn rate of an airliner at around >200 knots.
