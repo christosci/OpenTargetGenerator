@@ -126,6 +126,7 @@ class Aircraft:
     def disconnect_aircraft(self):
         """Disconnect the aircraft."""
         self.handler.stop()
+        del self.handler
 
     # ----------------
 

@@ -53,15 +53,14 @@ class OpenTargetGenerator:
         print('OpenTargetGenerator v' + c.version + '\n')
         self.aircraft_list = []
         self.prompts()
-        self.get_data()
         self.super_commands()
 
 
     def prompts(self):
         while True:
             try:
-                filename = input('Enter scenario filename: ')
-                c.scenario = ET.parse(os.path.join(c.scenario_path, filename)).getroot()
+                c.filename = input('Enter scenario filename: ')
+                self.get_data()
             except Exception as e:
                 print('Unexpected error parsing scenario file: %s' % (e))
             else:
@@ -77,23 +76,29 @@ class OpenTargetGenerator:
         else:
             c.server_port = int(c.server_port)
 
+        self.initialize_aircraft()
+
 
     def get_data(self):
+        c.scenario = ET.parse(os.path.join(c.scenario_path, c.filename)).getroot()
         c.data['magvar'] = round(float(c.scenario.get('magvar')))
         c.data['navaids'] = c.scenario.find('navaids').findall('wp')
         c.data['runways'] = c.scenario.find('runways').findall('rwy')
         c.data['aircraft'] = c.scenario.find('aircraft').findall('ac')
 
-        for ac in c.data['aircraft']:
-            aircraft_obj = Aircraft(ac)
+
+    def initialize_aircraft(self):
+        for ac_data in c.data['aircraft']:
+            aircraft_obj = Aircraft(ac_data)
             self.aircraft_list.append(aircraft_obj)
             aircraft_obj.handler = FgmsHandler(aircraft_obj)
 
 
     def delete_all_aircraft(self):
-        for ac in reversed(self.aircraft_list):
+        for ac in self.aircraft_list:
             ac.disconnect_aircraft()
             del ac
+        self.aircraft_list.clear()
 
 
     def super_commands(self):
@@ -165,7 +170,7 @@ class OpenTargetGenerator:
 
 
     def check_global_commands(self, command):
-        """Check for  that affect all aircraft objects globally.
+        """Check for commands that affect all aircraft objects globally.
 
         Returns:
             bool -- [Return true if super_commands() loop must continue]
@@ -181,6 +186,12 @@ class OpenTargetGenerator:
         elif command == 'U':
             for ac in self.aircraft_list:
                 ac.paused = False
+            return True
+        elif command == 'RELOAD':
+            self.delete_all_aircraft()
+            self.get_data()
+            self.initialize_aircraft()
+            print('Scenario has been reloaded')
             return True
 
 
